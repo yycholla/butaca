@@ -58,20 +58,20 @@ def main():
     root, output = args.root.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     source_rows, deps = [], []
-    for name, recipe in [('ffmpeg', 'ci/build-ffmpeg.sh'), ('sentry-native', 'ci/build-sentry-native.sh')]:
+    # This fork no longer links Sentry Native or carries its build recipe.
+    for name, recipe in [('ffmpeg', 'ci/build-ffmpeg.sh')]:
         text = (root / recipe).read_text()
         version = re.search(r'^VERSION=([^\s]+)', text, re.M).group(1)
         checksum = re.search(r'^SHA256=([a-f0-9]{64})', text, re.M).group(1)
-        filename = ('ffmpeg-' + version + '.tar.xz' if name == 'ffmpeg'
-                    else 'sentry-native-' + version + '.tar.gz')
-        relative = ('vendor/ffmpeg-build/' if name == 'ffmpeg' else 'vendor/') + filename
+        filename = 'ffmpeg-' + version + '.tar.xz'
+        relative = 'vendor/ffmpeg-build/' + filename
         data, _ = read_regular(args.archive_root.resolve(), relative)
         if digest(data) != checksum:
             fail('pinned source archive checksum mismatch: ' + filename)
         (output / filename).write_bytes(data)
-        deps.append({'id': name, 'version': version, 'license': 'LGPL-2.1-or-later' if name == 'ffmpeg' else 'MIT',
+        deps.append({'id': name, 'version': version, 'license': 'LGPL-2.1-or-later',
                      'sources': [{'path': filename, 'sha256': checksum}], 'recipes': [recipe],
-                     'patches': [] if name == 'ffmpeg' else ['vendor/sentry-native/webos-arm32.patch']})
+                     'patches': []})
     # The private ASS library statically contains this entire stack. Ship its exact
     # upstream inputs along with the facade and build configuration, not URL offers.
     for dep in json.loads((root / 'ci/libass-dependencies.json').read_text()):

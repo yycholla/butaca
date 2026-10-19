@@ -66,6 +66,19 @@ class BundleTests(unittest.TestCase):
         self.write()
         self.assertEqual(first, self.path.read_bytes())
 
+    def test_telemetry_free_fork_does_not_require_removed_sentry_sources(self):
+        self.manifest['dependencies'] = [d for d in self.manifest['dependencies'] if d['id'] != 'sentry-native']
+        del self.contents['dependencies/sentry-native/source.txt']
+        del self.contents['vendor/sentry-native/webos-arm32.patch']
+        self.refresh()
+        self.check()
+
+    def test_legacy_sentry_recipe_still_requires_its_sources(self):
+        self.manifest['dependencies'] = [d for d in self.manifest['dependencies'] if d['id'] != 'sentry-native']
+        self.refresh()
+        with self.assertRaisesRegex(ValueError, 'missing dependency source mapping: sentry-native'):
+            self.check()
+
     def test_missing_gpl(self):
         del self.contents['LICENSE']
         self.refresh()
