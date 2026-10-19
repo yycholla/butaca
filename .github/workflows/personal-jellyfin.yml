@@ -30,10 +30,12 @@ jobs:
       # The existing CI workflow runs make check for the same pull request.
       - name: Check package configuration decoder
         run: python3 ci/check-package.py --selftest
-      - name: Check and test the Jellyfin release configuration
+      - name: Check shipping Jellyfin core and run its unit harness
         run: |
           cargo +nightly-2026-07-02 check --locked --manifest-path rust-modules/Cargo.toml --lib --no-default-features --features jellyfin
-          cargo +nightly-2026-07-02 test --locked --manifest-path rust-modules/Cargo.toml --lib --no-default-features --features jellyfin
+          # The unit harness uses devtriggers to inject synthetic playback results.
+          # The separate check above and ARM package below compile the shipping features.
+          cargo +nightly-2026-07-02 test --locked --manifest-path rust-modules/Cargo.toml --lib --features jellyfin
 
   package:
     needs: checks

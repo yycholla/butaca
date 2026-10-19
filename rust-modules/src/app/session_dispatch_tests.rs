@@ -4,7 +4,6 @@
 use super::*;
 #[allow(unused_imports)]
 use super::test_support::*;
-#[cfg(feature = "devtriggers")]
 use super::test_support::{frame, frame_with_results};
 
 #[test]
