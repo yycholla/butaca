@@ -12,8 +12,9 @@ and host unit tests do not establish that video works on the physical TV.
 ## Build with GitHub Actions
 
 1. Put this checkout in a repository in your own GitHub account.
-2. Open **Actions → Personal Jellyfin TV build → Run workflow** on the branch with
-   these changes. The workflow needs an available `ubuntu-24.04-arm` runner for the
+2. Open a pull request with these changes, or (once the workflow is on the default
+   branch) use **Actions → Personal Jellyfin TV build → Run workflow**. The workflow
+   needs an available `ubuntu-24.04-arm` runner for the
    package job. No Jellyfin credentials or TV network access are needed by CI.
 3. Wait for both jobs to finish successfully. Download the
    **jellyfin-webos-tv-package** artifact. It contains the `.ipk` package, build
