@@ -3163,9 +3163,8 @@ pub(crate) fn arm_auto_fixture(
 /// rate, which is one sample of a distribution; atomically move the route to the best HLS state
 /// that estimate sustains, then build the replacement encoder at the current movie position. The
 /// caller performs the fresh Starfish Load only when this returns a URL.
-// Dev-only: used only by the `#[cfg(feature = "devtriggers")]` tests in this module's `tests`
-// submodule below (see the comment on the first one).
-#[cfg(all(test, feature = "devtriggers"))]
+// Test-only wrapper, including the release-configuration Force Direct Play test.
+#[cfg(test)]
 pub(crate) fn fallback_auto_to_hls(ps: &mut PlaybackSession, measured_kbps: u32, offset_secs: i64) -> Option<String> {
     let expected = worker_ticket();
     fallback_auto_to_hls_for(ps, &expected, measured_kbps, offset_secs)

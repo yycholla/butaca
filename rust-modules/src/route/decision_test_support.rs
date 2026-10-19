@@ -19,9 +19,7 @@ pub(super) fn p8() -> crate::metadata::Dovi {
 }
 
 /// Same provenance as `plan::tests::p5`: single-layer IPT-PQ with no HDR10 fallback.
-// Dev-only: used only by the `#[cfg(feature = "devtriggers")]` tests in this module (see the
-// comment on the first one).
-#[cfg(feature = "devtriggers")]
+// Pure fixture, also used by the release-configuration preview/enhancement tests.
 pub(super) fn p5() -> crate::metadata::Dovi {
     crate::metadata::Dovi {
         present: true,
