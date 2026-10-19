@@ -27,9 +27,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev libgl1-mesa-dev
           rustup toolchain install nightly-2026-07-02 --profile minimal --component rust-src --component clippy
-      # The existing CI workflow runs make check for the same pull request.
-      - name: Check package configuration decoder
-        run: python3 ci/check-package.py --selftest
+      - name: Run the complete host gate before packaging
+        env:
+          RUST_NIGHTLY: nightly-2026-07-02
+        run: |
+          make check
+          python3 ci/test_source_build_config.py
       - name: Check shipping Jellyfin core and run its unit harness
         run: |
           cargo +nightly-2026-07-02 check --locked --manifest-path rust-modules/Cargo.toml --lib --no-default-features --features jellyfin
