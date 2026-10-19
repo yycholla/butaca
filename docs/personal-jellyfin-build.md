@@ -67,5 +67,6 @@ Keep a dated log of exact prior settings and undo steps for every approved chang
 No cleanup, app disabling, launcher replacement or screensaver changes are part of
 this build.
 
-Current TV change log: **none**. No connection, installation or memory measurement
-has been performed.
+Keep the TV change log separately from this public repository. It should include
+developer setup, approved changes, measurements and undo instructions without keys
+or account credentials.

@@ -384,6 +384,9 @@ pub(crate) unsafe fn boot(
     preflight: super::bootstrap::Preflight,
     launch_params: Option<String>,
 ) -> Result<App, c_int> {
+    // Keep the emitted version identifiable in the binary and local boot log even
+    // without the upstream telemetry modules. The package gate checks this marker.
+    log(concat!("build: plxnative@", env!("PLX_VERSION")));
     let initial = match &preflight {
         super::bootstrap::Preflight::Live => None,
         super::bootstrap::Preflight::Record => {
