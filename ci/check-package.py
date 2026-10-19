@@ -63,7 +63,15 @@ def build_configuration(stamp: str) -> "str | None":
         stamp.strip())
     if not fields:
         return None
-    return {"": "dev", "--no-default-features": "release"}.get(fields.group("flags").strip())
+    # Enabling the Jellyfin backend does not enable developer controls. Keep this an
+    # exact allowlist: lab-diagnostics, devtriggers, and unknown features must not be
+    # mistaken for a release merely because --no-default-features is present.
+    return {
+        "": "dev",
+        "--features jellyfin": "dev",
+        "--no-default-features": "release",
+        "--no-default-features --features jellyfin": "release",
+    }.get(fields.group("flags").strip())
 
 
 def parse_release_line(content: str) -> "tuple[int, int] | None":
@@ -285,6 +293,14 @@ def _selftest() -> int:
         # older stamps, from before the telemetry and symbols fields existed
         "features:": "dev",
         "features:--no-default-features": "release",
+        # Jellyfin ships the same release restrictions with one backend feature enabled.
+        "features: --features jellyfin+tel:abc123def456": "dev",
+        "features:--no-default-features --features jellyfin+tel:abc123def456": "release",
+        "features:--no-default-features --features jellyfin+symbols+tel:abc123def456": "release",
+        "features:--no-default-features --features jellyfin+symbols+nightly:20261019+tel:abc123def456": "release",
+        "features:--no-default-features --features jellyfin": "release",
+        "features:--no-default-features --features jellyfin,devtriggers+tel:abc123def456": None,
+        "features:--no-default-features --features lab-diagnostics --features jellyfin+tel:abc123def456": None,
         # configurations that are neither shipped one, and must SAY so rather than be graded
         "features: --features lab-diagnostics+tel:abc123def456": None,          # LAB=1
         "features:--no-default-features --features lab-diagnostics+tel:abc123def456": None,
