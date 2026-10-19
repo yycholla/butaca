@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 from source_bundle import validate
+from source_build_config import jellyfin_make_argument
 
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('archive',type=Path);p.add_argument('--expect-snapshot',required=True)
@@ -16,6 +17,11 @@ p.add_argument('--work',type=Path,required=True,help='must not exist')
 p.add_argument('--rust-toolchain',default='nightly')
 p.add_argument('--private-values',required=True,type=Path)
 a=p.parse_args();manifest=validate(a.archive,a.expect_snapshot,[v.encode() for v in json.loads(a.private_values.read_text())])
+configuration=manifest.get('build_environment',{}).get('configuration',{})
+try:
+    jellyfin_argument=jellyfin_make_argument(configuration)
+except ValueError as error:
+    sys.exit('FAIL: '+str(error))
 # The same NDK the release was built with (prepare-source-release.py recorded its hash); the
 # rebuild's `make` inherits WEBOS_SDK from this environment, so no path is guessed here either.
 if not os.environ.get('WEBOS_SDK'):sys.exit('FAIL: WEBOS_SDK is unset; pass the NDK the release was built with')
@@ -34,9 +40,9 @@ source=work/'source';env=dict(os.environ,RUSTUP_HOME=str(work/'rustup'),CARGO_HO
 commands=[
  [sys.executable,str(Path(__file__).with_name('restore-source-inputs.py')),str(a.archive.resolve()),'--expect-snapshot',a.expect_snapshot,'--destination',str(source),'--rust-sysroot',str(isolated)],
  ['rustup','toolchain','link','source-rebuild',str(isolated)],
- ['make','-C',str(source),'RUST_NIGHTLY=source-rebuild','RELEASE=1','FLAVOR=stable',
+ ['make','-C',str(source),'RUST_NIGHTLY=source-rebuild','RELEASE=1','FLAVOR=stable',jellyfin_argument,
   'PLX_SENTRY_DSN=','PLX_POSTHOG_KEY=','PLX_SENTRY_DSN_DEV=','PLX_POSTHOG_KEY_DEV=','ipk']]
-result={'ndk_gcc_sha256':ndk_hash,'source_snapshot_sha256':a.expect_snapshot,'rebuild_status':'FAIL','configuration':'production ARM stable, no private telemetry configuration','bit_for_bit':'NOT_CLAIMED','commands':commands}
+result={'ndk_gcc_sha256':ndk_hash,'source_snapshot_sha256':a.expect_snapshot,'rebuild_status':'FAIL','configuration':configuration,'bit_for_bit':'NOT_CLAIMED','commands':commands}
 with (work/'build.log').open('w') as log:
  for command in commands:
   run=subprocess.run(command,env=env,stdout=log,stderr=subprocess.STDOUT)

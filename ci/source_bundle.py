@@ -283,7 +283,11 @@ def validate(path, expected_snapshot=None, private_values=()):
     ids = [dep['id'] for dep in dependencies]
     if len(ids) != len(set(ids)):
         fail('duplicate dependency identity')
-    for required in ['ffmpeg', 'sentry-native', 'cargo-vendor', 'rust-runtime']:
+    required_dependencies = ['ffmpeg', 'cargo-vendor', 'rust-runtime']
+    # Retain the source requirement for older bundles that still build Sentry.
+    if 'ci/build-sentry-native.sh' in contents or 'vendor/sentry-native/webos-arm32.patch' in contents:
+        required_dependencies.append('sentry-native')
+    for required in required_dependencies:
         if required not in ids:
             fail('missing dependency source mapping: ' + required)
     # Older source bundles predate the renderer. For a tree carrying its build

@@ -1,0 +1,53 @@
+name: Personal Jellyfin TV build
+
+# Build a reviewable package on a PR or manual request; never deploy to a TV.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-jellyfin-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Host checks including Jellyfin
+    runs-on: ubuntu-latest
+    env:
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Install host dependencies and Rust
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev libgl1-mesa-dev
+          rustup toolchain install nightly-2026-07-02 --profile minimal --component rust-src --component clippy
+      - name: Run the complete host gate before packaging
+        env:
+          RUST_NIGHTLY: nightly-2026-07-02
+        run: |
+          make check
+          python3 ci/test_source_build_config.py
+      - name: Check shipping Jellyfin core and run its unit harness
+        run: |
+          cargo +nightly-2026-07-02 check --locked --manifest-path rust-modules/Cargo.toml --lib --no-default-features --features jellyfin
+          # The unit harness uses devtriggers to inject synthetic playback results.
+          # The separate check above and ARM package below compile the shipping features.
+          cargo +nightly-2026-07-02 test --locked --manifest-path rust-modules/Cargo.toml --lib --features jellyfin
+
+  package:
+    needs: checks
+    uses: ./.github/workflows/build-package.yml
+    with:
+      ref: ${{ github.sha }}
+      flavor: stable
+      artifact: jellyfin-webos-tv-package
+      homebrew-manifest: false
+      source-asset: true
+      caches: true
+      fwcompat: true

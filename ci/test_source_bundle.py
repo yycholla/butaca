@@ -66,6 +66,19 @@ class BundleTests(unittest.TestCase):
         self.write()
         self.assertEqual(first, self.path.read_bytes())
 
+    def test_telemetry_free_fork_does_not_require_removed_sentry_sources(self):
+        self.manifest['dependencies'] = [d for d in self.manifest['dependencies'] if d['id'] != 'sentry-native']
+        del self.contents['dependencies/sentry-native/source.txt']
+        del self.contents['vendor/sentry-native/webos-arm32.patch']
+        self.refresh()
+        self.check()
+
+    def test_legacy_sentry_recipe_still_requires_its_sources(self):
+        self.manifest['dependencies'] = [d for d in self.manifest['dependencies'] if d['id'] != 'sentry-native']
+        self.refresh()
+        with self.assertRaisesRegex(ValueError, 'missing dependency source mapping: sentry-native'):
+            self.check()
+
     def test_missing_gpl(self):
         del self.contents['LICENSE']
         self.refresh()
@@ -364,6 +377,20 @@ class BundleTests(unittest.TestCase):
         result = subprocess.run(command, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotEqual(before, validate(self.path)['snapshot_sha256'])
+
+    def test_producer_ignores_generated_feature_build_directories(self):
+        repo, command = self.producer_fixture()
+        (repo / '.gitignore').write_bytes((Path(__file__).resolve().parents[1] / '.gitignore').read_bytes())
+        subprocess.run(['git', '-C', str(repo), 'add', '.gitignore'], check=True, capture_output=True)
+        subprocess.run(['git', '-C', str(repo), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                        'commit', '-qm', 'fixture build exclusions'], check=True, capture_output=True)
+        for directory in ['target-release-jellyfin-sym', 'target-release-jellyfin', 'target-jellyfin', 'target-release-sym']:
+            generated = repo / 'rust-modules' / directory / '.rustc_info.json'
+            generated.parent.mkdir(parents=True)
+            generated.write_bytes(b'{"generated":"fixture"}')
+        result = subprocess.run(command, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(any('/target-' in name for name in validate(self.path)['files']))
 
     def test_producer_keeps_locale_catalogs_as_build_inputs(self):
         catalogs = {
