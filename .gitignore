@@ -41,6 +41,8 @@ src/config.local.h
 # library inventory that used to be committed alongside them. See tests/manifest.local.json.example.
 tests/manifest.local.json
 rust-modules/target/
+# Cargo feature/symbol combinations are generated build trees, never source.
+rust-modules/target-*/
 rust-modules/target-release/
 rust-modules/target-sim/
 rust-modules/target-macapp/

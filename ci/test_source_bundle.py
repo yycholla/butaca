@@ -378,6 +378,20 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotEqual(before, validate(self.path)['snapshot_sha256'])
 
+    def test_producer_ignores_generated_feature_build_directories(self):
+        repo, command = self.producer_fixture()
+        (repo / '.gitignore').write_bytes((Path(__file__).resolve().parents[1] / '.gitignore').read_bytes())
+        subprocess.run(['git', '-C', str(repo), 'add', '.gitignore'], check=True, capture_output=True)
+        subprocess.run(['git', '-C', str(repo), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                        'commit', '-qm', 'fixture build exclusions'], check=True, capture_output=True)
+        for directory in ['target-release-jellyfin-sym', 'target-release-jellyfin', 'target-jellyfin', 'target-release-sym']:
+            generated = repo / 'rust-modules' / directory / '.rustc_info.json'
+            generated.parent.mkdir(parents=True)
+            generated.write_bytes(b'{"generated":"fixture"}')
+        result = subprocess.run(command, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(any('/target-' in name for name in validate(self.path)['files']))
+
     def test_producer_keeps_locale_catalogs_as_build_inputs(self):
         catalogs = {
             'locales/en/widgets.json': b'{"widgets.title":{"value":"Information"}}',
