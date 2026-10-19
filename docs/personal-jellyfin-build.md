@@ -6,7 +6,14 @@ Rust interface, GPU rendering and webOS playback implementation. This is not an
 independent rewrite. Keep the GPL license and third-party notices with any copies.
 
 The target TV is an LG 55UP7670PUC, originally supplied with webOS 6.0. Compatibility
-and performance on this particular TV have not been tested. Static firmware checks
+and performance on this particular TV require device testing. The first 0.7.0 build
+installed on firmware 6.5.3 but stalled before drawing its login screen: SDL's panel
+resolution request returned "Method getPanelResolution was not handled" and its
+waiting loop never completed. The webOS 6 compatibility fallback leaves lifecycle
+ownership with SDL instead of claiming the app's bus name first. It disables item
+deep links sent to an already-running app; cold-launch parameters remain supported.
+This fallback still requires a rebuilt package and successful on-TV verification.
+Static firmware checks
 and host unit tests do not establish that video works on the physical TV.
 
 ## Build with GitHub Actions

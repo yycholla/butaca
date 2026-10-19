@@ -38,6 +38,8 @@ use std::sync::OnceLock;
 
 pub(crate) mod jail_repair;
 pub(crate) mod caps;
+#[cfg(feature = "jellyfin")]
+mod lifecycle_policy;
 
 const OS_INFO: &str = "/var/run/nyx/os_info.json";
 
@@ -1303,7 +1305,11 @@ pub(crate) mod ls2 {
 ///
 /// # Shape
 ///
-/// The claim (named registration + subscription) is made on the boot thread, before SDL, and
+/// On webOS 6, the custom claim is skipped: the TV's SDL keeps lifecycle ownership so its own
+/// startup services can initialize. In-process relaunch item links are unavailable in that
+/// fallback; ordinary launch parameters still go through the boot parser. See `lifecycle_policy`.
+///
+/// Where enabled, the claim (named registration + subscription) is made before SDL, and
 /// `start` waits bounded for its outcome; only the pump lives on its own thread after that. One
 /// registration, one subscription, and a [`Mutex`] the frame loop drains. The subscription callback
 /// runs on that thread and must not touch the UI; the frame loop must not block on the bus. Queue
@@ -1397,6 +1403,12 @@ pub(crate) mod lifecycle {
     /// under `cfg(test)`, which get the no-op twin below.
     #[cfg(all(not(feature = "hostsim"), not(test)))]
     pub(crate) fn start() {
+        if !super::lifecycle_policy::claim_before_sdl(super::info().major) {
+            crate::log(
+                "samlife: webOS 6 compatibility fallback; SDL owns lifecycle, relaunch item links are off",
+            );
+            return;
+        }
         use std::os::raw::c_void;
         use std::sync::mpsc;
 

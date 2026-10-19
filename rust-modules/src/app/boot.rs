@@ -433,7 +433,9 @@ pub(crate) unsafe fn construct(
     // (`registerApp {"id":...}` -> registered, captured on the bus), and SAM then delivers
     // `relaunch` deep links to that claimant - which drops them. Whoever claims the name first
     // owns the channel, so the claim goes here with a bounded wait for its outcome; on any failure
-    // SDL proceeds exactly as before, which is the pre-fix behaviour. Jellyfin flavour only: it is
+    // SDL proceeds exactly as before, which is the pre-fix behaviour. start() also applies the
+    // firmware policy: on webOS 6 it leaves SDL as owner to avoid the panel-query startup stall.
+    // Jellyfin flavour only: it is
     // the one with a launch-param deep link for the event to carry.
     #[cfg(feature = "jellyfin")]
     crate::webos::lifecycle::start();
